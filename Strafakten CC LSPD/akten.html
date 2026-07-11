@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aktenverwaltung LSPD</title>
+    <style>
+      :root {
+        --bg: #07111f;
+        --panel: rgba(8, 19, 34, 0.9);
+        --line: rgba(255,255,255,0.14);
+        --text: #f7fbff;
+        --muted: #9eb2c8;
+        --accent: #34d1bf;
+        --accent-2: #5bc0ff;
+        --danger: #ff6b6b;
+        --shadow: 0 24px 50px rgba(0,0,0,0.32);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text);
+        background: linear-gradient(135deg, #07111f, #10253f 60%, #0e1f36);
+        min-height: 100vh;
+      }
+
+      .app-shell { max-width: 1320px; margin: 0 auto; padding: 24px 20px 50px; }
+      .topbar, .card, .case-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(15px);
+        border-radius: 24px;
+      }
+      .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; margin-bottom: 18px; }
+      .topbar .actions { display: flex; gap: 10px; }
+      .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--muted); }
+
+      .grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; }
+      .card { padding: 22px; }
+      h1, h2, h3 { margin: 0 0 10px; }
+      p { color: var(--muted); line-height: 1.6; }
+      label { display: grid; gap: 6px; margin-bottom: 10px; font-weight: 600; }
+      input, button, textarea { width: 100%; border: 1px solid var(--line); background: rgba(255,255,255,0.08); color: var(--text); padding: 12px 14px; border-radius: 12px; font-size: 1rem; }
+      textarea { min-height: 88px; resize: vertical; }
+      button { cursor: pointer; font-weight: 700; }
+      .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+      .btn-danger { background: rgba(255,107,107,0.16); color: #ffd5d5; }
+      .btn-secondary { background: rgba(255,255,255,0.1); }
+      .case-list { display: grid; gap: 16px; margin-top: 16px; }
+      .case-card { padding: 18px; }
+      .case-header { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; }
+      .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+      .meta span { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); font-size: 0.9rem; color: var(--muted); }
+      .entry { padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 12px; background: rgba(255,255,255,0.05); margin-top: 10px; }
+      .entry strong { display: block; margin-bottom: 4px; }
+      .muted { color: var(--muted); font-size: 0.92rem; }
+      .small { font-size: 0.9rem; color: var(--muted); }
+      .empty { padding: 20px; border-radius: 18px; background: rgba(255,255,255,0.05); color: var(--muted); }
+      .hidden { display: none; }
+
+      @media (max-width: 960px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="topbar">
+        <div>
+          <h1>Aktensystem LSPD</h1>
+          <p>Alle Personen mit Polizeikontakt sind hier zentral erfasst.</p>
+        </div>
+        <div class="actions">
+          <span class="pill" id="userBadge">Angemeldet</span>
+          <button class="btn-secondary" id="logoutBtn" type="button">Abmelden</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Neue Akte anlegen</h2>
+          <p>Erstelle eine permanente Akte mit Name, Alter, Telefonnummer, Straftat, Strafe und Maßnahme.</p>
+          <form id="caseForm">
+            <label>
+              Voller Name
+              <input id="name" placeholder="Name der Person" required />
+            </label>
+            <label>
+              Alter
+              <input id="age" type="number" min="0" placeholder="Alter" required />
+            </label>
+            <label>
+              Telefonnummer
+              <input id="phone" placeholder="Telefonnummer" required />
+            </label>
+            <label>
+              Straftat
+              <textarea id="offense" placeholder="Kurzbeschreibung der Straftat" required></textarea>
+            </label>
+            <label>
+              Maßnahme / Strafe (Beschreibung)
+              <input id="punishment" placeholder="z. B. Freiheitsstrafe 6 Monate, Bewährung" />
+            </label>
+            <label>
+              Strafe (€)
+              <input id="fine" type="number" min="0" placeholder="z. B. 1200" required />
+            </label>
+            <button class="btn-primary" type="submit">Akte erstellen</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Aktensystem</h2>
+          <p>Alle vorhandenen Akten werden hier dauerhaft gespeichert.</p>
+          <div id="caseList" class="case-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEYS = {
+        users: 'lspdUsers',
+        cases: 'lspdCases',
+        session: 'lspdSession'
+      };
+
+      function loadUsers() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEYS.users) || '[]');
+        } catch {
+          return [];
+        }
+      }
+
+      function loadCases() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEYS.cases) || '[]');
+        } catch {
+          return [];
+        }
+      }
+
+      function saveCases(cases) {
+        localStorage.setItem(STORAGE_KEYS.cases, JSON.stringify(cases));
+      }
+
+      function loadSession() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEYS.session) || 'null');
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSession(user) {
+        localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(user));
+      }
+
+      function clearSession() {
+        localStorage.removeItem(STORAGE_KEYS.session);
+      }
+
+      function ensureSeedData() {
+        const users = loadUsers();
+        if (!users.length) {
+          localStorage.setItem(STORAGE_KEYS.users, JSON.stringify([{ username: 'admin', password: 'admin123', role: 'admin' }]));
+        }
+
+        const cases = loadCases();
+        if (!cases.length) {
+          saveCases([
+            {
+              id: 'seed-1',
+              name: 'Mia Schneider',
+              age: 27,
+              phone: '0152-12345678',
+              createdBy: 'admin',
+              createdAt: new Date().toISOString(),
+              entries: [
+                {
+                  offense: 'Rauschgiftdelikte',
+                  fine: 1800,
+                  punishment: 'Bewährungsstrafe',
+                  assignedBy: 'admin',
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            }
+          ]);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        ensureSeedData();
+
+        const session = loadSession();
+        if (!session) {
+          window.location.href = 'start.html';
+          return;
+        }
+
+        document.getElementById('userBadge').textContent = `Angemeldet als ${session.username}`;
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+          clearSession();
+          window.location.href = 'start.html';
+        });
+
+        const caseForm = document.getElementById('caseForm');
+        const caseList = document.getElementById('caseList');
+
+        function renderCases() {
+          const cases = loadCases();
+          if (!cases.length) {
+            caseList.innerHTML = '<div class="empty">Noch keine Akten vorhanden.</div>';
+            return;
+          }
+
+          caseList.innerHTML = '';
+          cases.slice().reverse().forEach((caseItem) => {
+            const card = document.createElement('article');
+            card.className = 'case-card';
+            const entries = caseItem.entries || [];
+            const isAdmin = session.role === 'admin';
+            card.innerHTML = `
+              <div class="case-header">
+                <div>
+                  <h3>${caseItem.name}</h3>
+                  <div class="small">Erstellt von ${caseItem.createdBy}</div>
+                </div>
+                ${isAdmin ? '<button class="btn-danger delete-case" data-id="' + caseItem.id + '" type="button">Akte löschen</button>' : ''}
+              </div>
+              <div class="meta">
+                <span>Alter: ${caseItem.age}</span>
+                <span>Telefon: ${caseItem.phone}</span>
+                <span>Erstellt: ${new Date(caseItem.createdAt).toLocaleString('de-DE')}</span>
+              </div>
+              <div class="entry">
+                <strong>Erste Strafakte</strong>
+                <div>${entries[0] ? entries[0].offense : 'Keine Einträge'}</div>
+                <div class="muted">Strafe: ${entries[0] ? entries[0].fine + ' €' : '—'} · Maßnahme: ${entries[0] && entries[0].punishment ? entries[0].punishment : '—'} · Vergeben von ${entries[0] ? entries[0].assignedBy : '—'}</div>
+              </div>
+              <div class="entry">
+                <strong>Weitere Strafakten</strong>
+                ${entries.slice(1).length ? entries.slice(1).map((entry) => `<div style="margin-top:8px;">• ${entry.offense} · ${entry.fine} €${entry.punishment ? ' · ' + entry.punishment : ''} · ${entry.assignedBy}</div>`).join('') : '<div class="muted">Noch keine weiteren Strafakten.</div>'}
+              </div>
+              <form class="entry-form" data-id="${caseItem.id}" style="margin-top: 10px;">
+                <label>
+                  Neue Strafakte ergänzen
+                  <textarea name="offense" placeholder="Neue Straftat eintragen" required></textarea>
+                </label>
+                <label>
+                  Maßnahme / Strafe (Beschreibung)
+                  <input name="punishment" placeholder="z. B. Freiheitsstrafe 6 Monate, Bewährung" />
+                </label>
+                <label>
+                  Strafe (€)
+                  <input name="fine" type="number" min="0" placeholder="z. B. 600" required />
+                </label>
+                <button class="btn-primary" type="submit">Neue Strafakte speichern</button>
+              </form>
+            `;
+            caseList.appendChild(card);
+          });
+        }
+
+        caseForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const name = document.getElementById('name').value.trim();
+          const age = document.getElementById('age').value;
+          const phone = document.getElementById('phone').value.trim();
+          const offense = document.getElementById('offense').value.trim();
+          const punishment = document.getElementById('punishment').value.trim();
+          const fine = document.getElementById('fine').value;
+
+          const cases = loadCases();
+          cases.push({
+            id: Date.now().toString(),
+            name,
+            age: Number(age),
+            phone,
+            createdBy: session.username,
+            createdAt: new Date().toISOString(),
+            entries: [{ offense, fine: Number(fine), punishment: punishment || '', assignedBy: session.username, createdAt: new Date().toISOString() }]
+          });
+
+          saveCases(cases);
+          caseForm.reset();
+          renderCases();
+        });
+
+        caseList.addEventListener('submit', (event) => {
+          if (!event.target.classList.contains('entry-form')) return;
+          event.preventDefault();
+          const caseId = event.target.getAttribute('data-id');
+          const offense = event.target.querySelector('textarea[name="offense"]').value.trim();
+          const punishment = event.target.querySelector('input[name="punishment"]').value.trim();
+          const fine = event.target.querySelector('input[name="fine"]').value;
+          const cases = loadCases();
+          const selectedCase = cases.find((entry) => entry.id === caseId);
+
+          if (!selectedCase) return;
+          selectedCase.entries.push({ offense, fine: Number(fine), punishment: punishment || '', assignedBy: session.username, createdAt: new Date().toISOString() });
+          saveCases(cases);
+          renderCases();
+        });
+
+        caseList.addEventListener('click', (event) => {
+          if (event.target.classList.contains('delete-case')) {
+            const caseId = event.target.getAttribute('data-id');
+            if (session.role !== 'admin') return;
+            const cases = loadCases().filter((entry) => entry.id !== caseId);
+            saveCases(cases);
+            renderCases();
+          }
+        });
+
+        renderCases();
+      });
+    </script>
+  </body>
+</html>

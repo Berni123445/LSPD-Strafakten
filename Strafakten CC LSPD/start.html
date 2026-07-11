@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strafakten LSPD</title>
+    <style>
+      :root {
+        --bg: #07111f;
+        --panel: rgba(9, 21, 37, 0.9);
+        --panel-2: rgba(255, 255, 255, 0.08);
+        --line: rgba(255, 255, 255, 0.16);
+        --text: #f8fbff;
+        --muted: #9fb1c8;
+        --accent: #34d1bf;
+        --accent-2: #5bc0ff;
+        --danger: #ff6b6b;
+        --shadow: 0 20px 45px rgba(0, 0, 0, 0.32);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top left, #13304f, var(--bg) 55%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .bg-orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(70px);
+        z-index: 0;
+        opacity: 0.35;
+      }
+      .bg-orb.one { width: 280px; height: 280px; background: var(--accent-2); top: -80px; right: -60px; }
+      .bg-orb.two { width: 220px; height: 220px; background: var(--accent); bottom: -40px; left: -60px; }
+
+      .app-shell {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px 60px;
+      }
+
+      .hero-card, .login-card, .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+        border-radius: 24px;
+      }
+
+      .hero-card {
+        display: grid;
+        grid-template-columns: 1.4fr 0.8fr;
+        gap: 24px;
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        font-size: 0.8rem;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+
+      h1, h2, h3 { margin: 0 0 10px; }
+      p { line-height: 1.6; color: var(--muted); }
+      .hero-card p { margin: 0 0 8px; }
+
+      .admin-card {
+        padding: 20px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(52,209,191,0.2), rgba(91,192,255,0.16));
+        border: 1px solid rgba(255,255,255,0.14);
+      }
+
+      .login-card {
+        padding: 28px;
+      }
+
+      form { display: grid; gap: 12px; }
+      label { display: grid; gap: 6px; font-weight: 600; color: var(--text); }
+      input, button, select {
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.08);
+        color: var(--text);
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-size: 1rem;
+      }
+
+      input::placeholder { color: #88a2b8; }
+      button {
+        cursor: pointer;
+        font-weight: 700;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,0.2); }
+      .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+      .btn-danger { background: rgba(255, 107, 107, 0.16); color: #ffd5d5; }
+      .btn-secondary { background: rgba(255,255,255,0.1); }
+
+      .message {
+        margin-top: 10px;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-weight: 600;
+      }
+      .message.success { background: rgba(52,209,191,0.16); color: #b6fff2; }
+      .message.error { background: rgba(255,107,107,0.16); color: #ffd5d5; }
+
+      .panel { margin-top: 18px; padding: 20px; }
+      .hidden { display: none; }
+      .user-list { display: grid; gap: 10px; margin-top: 12px; }
+      .user-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); }
+      .user-item small { display: block; color: var(--muted); }
+
+      @media (max-width: 860px) {
+        .hero-card { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-orb one"></div>
+    <div class="bg-orb two"></div>
+
+    <div class="app-shell">
+      <section class="hero-card">
+        <div>
+          <p class="eyebrow">LSPD · Strafakten-System</p>
+          <h1>Moderne Polizeiarbeit in einer intuitiven Oberfläche</h1>
+          <p>Diese Plattform ermöglicht einen sicheren Login, die Verwaltung von Beamtenkonten und die zentrale Erfassung von Strafakten.</p>
+          <p>Alle Daten bleiben direkt im Browser gespeichert und sind damit auch nach dem Reload verfügbar.</p>
+        </div>
+        <div class="admin-card">
+          <h2>Administrator-Bereich</h2>
+          <p>Hinweis: Anmeldedaten werden aus Sicherheitsgründen nicht öffentlich angezeigt.</p>
+        </div>
+      </section>
+
+      <section class="login-card">
+        <h2>Anmeldung</h2>
+        <form id="loginForm">
+          <label>
+            Benutzername
+            <input id="username" name="username" placeholder="Benutzername" required />
+          </label>
+          <label>
+            Passwort
+            <input id="password" name="password" type="password" placeholder="Passwort" required />
+          </label>
+          <button class="btn-primary" type="submit">Anmelden</button>
+        </form>
+        <div id="loginMessage" class="message"></div>
+
+        <div id="adminPanel" class="panel hidden">
+          <h3>Neue Benutzerverwaltung</h3>
+          <form id="userForm">
+            <label>
+              Neuer Benutzername
+              <input id="newUserName" name="newUserName" placeholder="z. B. officer01" required />
+            </label>
+            <label>
+              Passwort
+              <input id="newUserPassword" name="newUserPassword" placeholder="Passwort" required />
+            </label>
+            <button class="btn-primary" type="submit">Benutzer hinzufügen</button>
+          </form>
+          <div id="userList" class="user-list"></div>
+        </div>
+
+        <div id="continueBox" class="hidden" style="margin-top: 16px;">
+          <button id="continueBtn" class="btn-secondary" type="button">Zum Aktensystem</button>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const STORAGE_KEYS = {
+        users: 'lspdUsers',
+        cases: 'lspdCases',
+        session: 'lspdSession'
+      };
+
+      function loadUsers() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEYS.users) || '[]');
+        } catch {
+          return [];
+        }
+      }
+
+      function saveUsers(users) {
+        localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
+      }
+
+      function loadCases() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEYS.cases) || '[]');
+        } catch {
+          return [];
+        }
+      }
+
+      function saveCases(cases) {
+        localStorage.setItem(STORAGE_KEYS.cases, JSON.stringify(cases));
+      }
+
+      function loadSession() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEYS.session) || 'null');
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSession(user) {
+        localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(user));
+      }
+
+      function clearSession() {
+        localStorage.removeItem(STORAGE_KEYS.session);
+      }
+
+      function ensureSeedData() {
+        const users = loadUsers();
+        if (!users.length) {
+          saveUsers([{ username: 'admin', password: 'admin123', role: 'admin' }]);
+        }
+
+        const cases = loadCases();
+        if (!cases.length) {
+          saveCases([
+            {
+              id: 'seed-1',
+              name: 'Mia Schneider',
+              age: 27,
+              phone: '0152-12345678',
+              createdBy: 'admin',
+              createdAt: new Date().toISOString(),
+              entries: [
+                {
+                  offense: 'Rauschgiftdelikte',
+                  fine: 1800,
+                  assignedBy: 'admin',
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            }
+          ]);
+        }
+      }
+
+      function showMessage(text, type = 'success') {
+        const box = document.getElementById('loginMessage');
+        box.textContent = text;
+        box.className = `message ${type}`;
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        ensureSeedData();
+
+        const loginForm = document.getElementById('loginForm');
+        const userForm = document.getElementById('userForm');
+        const adminPanel = document.getElementById('adminPanel');
+        const continueBox = document.getElementById('continueBox');
+        const continueBtn = document.getElementById('continueBtn');
+        const userList = document.getElementById('userList');
+
+        continueBtn.addEventListener('click', () => {
+          window.location.href = 'akten.html';
+        });
+
+        const existingSession = loadSession();
+        if (existingSession) {
+          showMessage(`Angemeldet als ${existingSession.username}`, 'success');
+          if (existingSession.role === 'admin') {
+            adminPanel.classList.remove('hidden');
+          }
+          continueBox.classList.remove('hidden');
+          renderUsers();
+        }
+
+        loginForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const username = document.getElementById('username').value.trim();
+          const password = document.getElementById('password').value;
+          const users = loadUsers();
+          const match = users.find((user) => user.username === username && user.password === password);
+
+          if (!match) {
+            showMessage('Zugangsdaten sind ungültig.', 'error');
+            return;
+          }
+
+          saveSession(match);
+          showMessage(`Willkommen, ${match.username}!`, 'success');
+          if (match.role === 'admin') {
+            adminPanel.classList.remove('hidden');
+          } else {
+            adminPanel.classList.add('hidden');
+          }
+          continueBox.classList.remove('hidden');
+          renderUsers();
+        });
+
+        userForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const newUserName = document.getElementById('newUserName').value.trim();
+          const newUserPassword = document.getElementById('newUserPassword').value;
+          const users = loadUsers();
+
+          if (!newUserName || !newUserPassword) {
+            showMessage('Bitte Benutzername und Passwort eingeben.', 'error');
+            return;
+          }
+
+          if (users.some((user) => user.username.toLowerCase() === newUserName.toLowerCase())) {
+            showMessage('Dieser Benutzer existiert bereits.', 'error');
+            return;
+          }
+
+          users.push({ username: newUserName, password: newUserPassword, role: 'officer' });
+          saveUsers(users);
+          renderUsers();
+          userForm.reset();
+          showMessage(`Benutzer ${newUserName} angelegt.`, 'success');
+        });
+
+        function renderUsers() {
+          const users = loadUsers();
+          userList.innerHTML = '';
+          users.forEach((user) => {
+            const item = document.createElement('div');
+            item.className = 'user-item';
+            item.innerHTML = `
+              <div>
+                <strong>${user.username}</strong>
+                <small>${user.role === 'admin' ? 'Administrator' : 'Beamter'}</small>
+              </div>
+              <button class="btn-danger" data-username="${user.username}" type="button">Löschen</button>
+            `;
+            userList.appendChild(item);
+          });
+
+          userList.querySelectorAll('button[data-username]').forEach((button) => {
+            button.addEventListener('click', () => {
+              const targetName = button.getAttribute('data-username');
+              if (targetName === 'admin') {
+                showMessage('Der Hauptadministrator kann nicht gelöscht werden.', 'error');
+                return;
+              }
+              const updatedUsers = loadUsers().filter((user) => user.username !== targetName);
+              saveUsers(updatedUsers);
+              renderUsers();
+              showMessage(`Benutzer ${targetName} entfernt.`, 'success');
+            });
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
